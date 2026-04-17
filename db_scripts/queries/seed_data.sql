@@ -1,11 +1,5 @@
--- =========================================================
--- 02_seed_data.sql
--- Ejecutar conectado a la base "bookstore"
--- =========================================================
-
--- =========================================================
 -- DATOS SEMILLA: books
--- =========================================================
+
 INSERT INTO books (isbn, title, author, category, publisher, publication_year, price, stock, description)
 VALUES
 ('9780131103627','The C Programming Language','Brian W. Kernighan','Programming','Prentice Hall',1988,45.00,20,'Classic book on C programming'),
@@ -18,9 +12,8 @@ VALUES
 ('9781789801817','Hands-On MLOps','Noah Gift','MLOps','Packt',2021,48.00,11,'Practical MLOps guide')
 ON CONFLICT (isbn) DO NOTHING;
 
--- =========================================================
 -- DATOS SEMILLA: customers
--- =========================================================
+
 INSERT INTO customers (first_name, last_name, email, phone, city, country)
 VALUES
 ('Juan','Perez','juan.perez@example.com','3001112233','Medellin','Colombia'),
@@ -28,7 +21,6 @@ VALUES
 ('Carlos','Lopez','carlos.lopez@example.com','3003334455','Cali','Colombia')
 ON CONFLICT (email) DO NOTHING;
 
--- =========================================================
 -- PEDIDO DE EJEMPLO
 -- Evita duplicar el pedido si ejecutas el seed varias veces
 -- =========================================================

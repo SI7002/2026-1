@@ -1,90 +1,59 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# =========================================================
-# VARIABLES
-# =========================================================
-RDS_HOST="${RDS_HOST:?Debes exportar RDS_HOST con el endpoint de RDS}"
-RDS_PORT="${RDS_PORT:-5432}"
+RDSHOST="${RDSHOST:?Debes exportar RDSHOST}"
+RDSPORT="${RDSPORT:-5432}"
 MASTER_USER="${MASTER_USER:-bookstore_admin}"
 DB_NAME="${DB_NAME:-bookstore}"
+QUERIES_DIR="${QUERIES_DIR:-./queries}"
 
-# Password del master user de RDS
-export PGPASSWORD="${PGPASSWORD:?Debes exportar PGPASSWORD con la clave del master user}"
+export PGPASSWORD="Passwd123456!*"
 
-SQL_DIR="${SQL_DIR:-./sql}"
+echo "==> Validando conexión a RDS"
+pg_isready -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d postgres
 
-# =========================================================
-# VALIDACIONES
-# =========================================================
-command -v psql >/dev/null 2>&1 || {
-  echo "ERROR: psql no está instalado en el Bastion Host."
-  exit 1
-}
-
+echo "==> Validando archivos SQL"
 for f in \
-  "${SQL_DIR}/create_data_base.sql" \
-  "${SQL_DIR}/schema.sql" \
-  "${SQL_DIR}/seed_data.sql" \
-  "${SQL_DIR}/grants.sql"
+  "${QUERIES_DIR}/create_role.sql" \
+  "${QUERIES_DIR}/create_database.sql" \
+  "${QUERIES_DIR}/schema.sql" \
+  "${QUERIES_DIR}/seed_data.sql" \
+  "${QUERIES_DIR}/grants.sql" \
+  "${QUERIES_DIR}/verify.sql"
 do
-  [[ -f "$f" ]] || {
-    echo "ERROR: No existe el archivo $f"
-    exit 1
-  }
+  [[ -f "$f" ]] || { echo "ERROR: No existe $f"; exit 1; }
 done
 
-echo "==> Probando conectividad al endpoint RDS"
-pg_isready -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${MASTER_USER}" -d postgres
+echo "==> Creando rol de aplicación"
+psql -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d postgres \
+  -v ON_ERROR_STOP=1 -f "${QUERIES_DIR}/create_role.sql"
 
 echo "==> Creando base de datos si no existe"
-psql \
-  -h "${RDS_HOST}" \
-  -p "${RDS_PORT}" \
-  -U "${MASTER_USER}" \
-  -d postgres \
-  -v ON_ERROR_STOP=1 \
-  -f "${SQL_DIR}/00_create_database.sql"
+psql -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d postgres \
+  -v ON_ERROR_STOP=1 -f "${QUERIES_DIR}/create_database.sql"
 
 echo "==> Creando esquema, tablas, índices y triggers"
-psql \
-  -h "${RDS_HOST}" \
-  -p "${RDS_PORT}" \
-  -U "${MASTER_USER}" \
-  -d "${DB_NAME}" \
-  -v ON_ERROR_STOP=1 \
-  -f "${SQL_DIR}/01_schema.sql"
+psql -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d "$DB_NAME" \
+  -v ON_ERROR_STOP=1 -f "${QUERIES_DIR}/schema.sql"
 
-echo "==> Cargando datos semilla"
-psql \
-  -h "${RDS_HOST}" \
-  -p "${RDS_PORT}" \
-  -U "${MASTER_USER}" \
-  -d "${DB_NAME}" \
-  -v ON_ERROR_STOP=1 \
-  -f "${SQL_DIR}/02_seed_data.sql"
+echo "==> Insertando datos semilla"
+psql -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d "$DB_NAME" \
+  -v ON_ERROR_STOP=1 -f "${QUERIES_DIR}/seed_data.sql"
 
-echo "==> Creando usuario(s) y asignando permisos"
-psql \
-  -h "${RDS_HOST}" \
-  -p "${RDS_PORT}" \
-  -U "${MASTER_USER}" \
-  -d "${DB_NAME}" \
-  -v ON_ERROR_STOP=1 \
-  -f "${SQL_DIR}/03_grants.sql"
+echo "==> Asignando permisos"
+psql -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d "$DB_NAME" \
+  -v ON_ERROR_STOP=1 -f "${QUERIES_DIR}/grants.sql"
 
-if [[ -f "${SQL_DIR}/99_verify.sql" ]]; then
-  echo "==> Ejecutando validaciones"
-  psql \
-    -h "${RDS_HOST}" \
-    -p "${RDS_PORT}" \
-    -U "${MASTER_USER}" \
-    -d "${DB_NAME}" \
-    -v ON_ERROR_STOP=1 \
-    -f "${SQL_DIR}/99_verify.sql"
-fi
+echo "==> Ejecutando validaciones"
+psql -h "$RDSHOST" -p "$RDSPORT" -U "$MASTER_USER" -d "$DB_NAME" \
+  -v ON_ERROR_STOP=1 -f "${QUERIES_DIR}/verify.sql"
 
-echo "==> Bootstrap completado correctamente"
-echo "Host: ${RDS_HOST}"
-echo "Base: ${DB_NAME}"
-echo "Usuario administrador usado: ${MASTER_USER}"
+echo ""
+echo "===================================="
+echo "✔ Bootstrap completado correctamente"
+echo "Host: $RDSHOST"
+echo "Port: $RDSPORT"
+echo "DB: $DB_NAME"
+echo "Admin user: $MASTER_USER"
+echo "Queries dir: $QUERIES_DIR"
+echo "===================================="
