@@ -1,0 +1,85 @@
+{
+  "Comment": "MyBookstore nightly pipeline MVP",
+  "StartAt": "Parallel-Raw-Job",
+  "States": {
+    "Parallel-Raw-Job": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Glue StartJobRun - Raw-Books",
+          "States": {
+            "Glue StartJobRun - Raw-Books": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "glue_elt_bookstore",
+                "Arguments": {
+                  "--source_table": "public.books",
+                  "--s3_target_path": "s3://data-bucket-735018730604/raw/bookstore/",
+                  "--target_entity": "books"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Glue-StartJobRun-Raw-Customers",
+          "States": {
+            "Glue-StartJobRun-Raw-Customers": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "glue_elt_bookstore",
+                "Arguments": {
+                  "--source_table": "public.customers",
+                  "--s3_target_path": "s3://data-bucket-735018730604/raw/bookstore/",
+                  "--target_entity": "customers"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Glue StartJobRun-Raw-Orders",
+          "States": {
+            "Glue StartJobRun-Raw-Orders": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "glue_elt_bookstore",
+                "Arguments": {
+                  "--source_table": "public.orders",
+                  "--s3_target_path": "s3://data-bucket-735018730604/raw/bookstore/",
+                  "--target_entity": "orders"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Glue StartJobRun-Raw-Order-items",
+          "States": {
+            "Glue StartJobRun-Raw-Order-items": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "glue_elt_bookstore",
+                "Arguments": {
+                  "--source_table": "public.order_items",
+                  "--s3_target_path": "s3://data-bucket-735018730604/raw/bookstore/",
+                  "--target_entity": "order_items"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "End": true
+    }
+  },
+  "QueryLanguage": "JSONata"
+}
