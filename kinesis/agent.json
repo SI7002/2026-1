@@ -1,0 +1,13 @@
+{
+  "cloudwatch.emitMetrics": true,
+  "kinesis.endpoint": "",
+  "firehose.endpoint": "",
+
+  "flows": [
+    {
+      "filePattern": "/home/ec2-user/2026-1/log_example/http_requests.log",
+      "kinesisStream": "clickstream",
+      "initialPosition": "START_OF_FILE"
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "Comment": "MyBookstore nightly pipeline MVP",
+  "StartAt": "Glue StartJobRun - Raw-Books",
+  "States": {
+    "Glue StartJobRun - Raw-Books": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_elt_bookstore",
+        "Arguments": {
+          "--source_table": "public.books",
+          "--connection_name": "Bookstore RDS connection",
+          "--s3_target_path": "s3://data1-bkstore/raw/",
+          "--target_entity": "books"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Glue-StartJobRun-Raw-Customers"
+    },
+    "Glue-StartJobRun-Raw-Customers": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_elt_bookstore",
+        "Arguments": {
+          "--source_table": "public.customers",
+          "--connection_name": "Bookstore RDS connection",
+          "--s3_target_path": "s3://data1-bkstore/raw/",
+          "--target_entity": "customers"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Glue StartJobRun-Raw-Orders"
+    },
+    "Glue StartJobRun-Raw-Orders": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_elt_bookstore",
+        "Arguments": {
+          "--source_table": "public.orders",
+          "--connection_name": "Bookstore RDS connection",
+          "--s3_target_path": "s3://data1-bkstore/raw/",
+          "--target_entity": "orders"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Glue StartJobRun-Raw-Order-items"
+    },
+    "Glue StartJobRun-Raw-Order-items": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_elt_bookstore",
+        "Arguments": {
+          "--source_table": "public.order_items",
+          "--connection_name": "Bookstore RDS connection",
+          "--s3_target_path": "s3://data1-bkstore/raw/",
+          "--target_entity": "order_items"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Curated Books"
+    },
+    "Curated Books": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_transform_raw_to_curated",
+        "Arguments": {
+          "--source_base_path": "s3://data1-bkstore/raw",
+          "--target_base_path": "s3://data1-bkstore/curated",
+          "--target_entity": "books"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Curated Customers"
+    },
+    "Curated Customers": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_transform_raw_to_curated",
+        "Arguments": {
+          "--source_base_path": "s3://data1-bkstore/raw",
+          "--target_base_path": "s3://data1-bkstore/curated",
+          "--target_entity": "customers"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Curated Orders"
+    },
+    "Curated Orders": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_transform_raw_to_curated",
+        "Arguments": {
+          "--source_base_path": "s3://data1-bkstore/raw",
+          "--target_base_path": "s3://data1-bkstore/curated",
+          "--target_entity": "orders"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Curated Order Items"
+    },
+    "Curated Order Items": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_transform_raw_to_curated",
+        "Arguments": {
+          "--source_base_path": "s3://data1-bkstore/raw",
+          "--target_base_path": "s3://data1-bkstore/curated",
+          "--target_entity": "order_items"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Next": "Customer Features"
+    },
+    "Customer Features": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "glue_customer_features",
+        "Arguments": {
+          "--curated_base_path": "s3://data1-bkstore/curated",
+          "--features_base_path": "s3://data1-bkstore/features",
+          "--snapshot_date": "{% $substring($states.context.Execution.StartTime, 0, 10) %}"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Glue.ConcurrentRunsExceededException"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 10,
+          "BackoffRate": 1.5
+        }
+      ],
+      "End": true
+    }
+  },
+  "QueryLanguage": "JSONata"
+}
